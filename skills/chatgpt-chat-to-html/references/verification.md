@@ -51,3 +51,12 @@ Python testleri sentetik ZIP'ler üretir. JS testleri JSDOM içinde UI olayları
 | Formül/özel UI kodu görünüyor | Bu renderer tam ChatGPT UI motoru değildir; inert kaynak veya doğrulanmış `choice` temsili |
 
 Test veya commit başarısızlığına sınırsız retry yapmayın. Somut hatayı giderip ilgili kontrolü yeniden çalıştırın. Git push reddedilirse yeni uzak başı okuyun; force-push ile üstünü örtmeyin.
+
+
+## 1.1 paylaşım ve komut kontrolleri
+
+- İki tam taramada baş/son sınırları, mesaj sırası ve medya kimlikleri eşleşmeli. Tek viewport yeterli değildir. Placeholder'ın sonradan görsele dönüşmesi kayıp yaratmamalı.
+- Süresi dolan dosya aynı paylaşım yenilenerek yeniden çözülmeli; komşu medya yerine geçmemeli. Başarısızlık üç denemede durmalı. XML/HTML hata sayfası görsel sayılmamalı. Eksik dosya/mesaj ve checksum/boyut uyuşmazlığı build'i durdurmalı.
+- Thinking ve araç hatası regresyonlarını hem asistan hem kullanıcıya eklenmiş exporter bölümüyle dene. Gerçek prompt, alıntı ve kod örneğini koru.
+- 100+ satırlık komutu aç; son satıra normal sayfa kaydırmasıyla eriş, kısa önizlemenin açıkken gizlendiğini doğrula. Clipboard ikonuna tıklayınca tam Unicode metin ve satır sonları gelmeli. İzin reddinde fallback veya seçili metin gösterilmeli; yanlış başarı bildirimi olmamalı.
+- `tests/shared_capture.test.cjs` browser helper algoritmasını sentetik DOM/adapter ile, `tests/test_shared_capture.py` yerel dosya ve capture doğrulamasını test eder. Bunlar canlı ChatGPT DOM uyumluluğunu veya gerçek tarayıcı yerleşimini kanıtlamaz; canlı test bulgularını ayrıca raporla.

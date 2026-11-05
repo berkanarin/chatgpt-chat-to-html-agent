@@ -1,17 +1,17 @@
 ---
 name: chatgpt-chat-to-html
-description: Convert exported ChatGPT Markdown ZIPs into a single offline HTML chat replay with embedded images and files, reviewed learning cards, image comparison and automatic response scrolling. Use for interactive training from existing conversations, not for live AI chat or browser scraping.
+description: Convert exported ChatGPT Markdown ZIPs or accessible ChatGPT shared links into a single offline HTML chat replay with embedded images and files, reviewed learning cards, image comparison and automatic response scrolling. Use for interactive training from existing conversations, not for live AI chat or recovering inaccessible conversations.
 ---
 
 # ChatGPT Chat to HTML
 
-Build an educational replay from the user's archive. Keep source messages distinct from agent-written learning notes. Use the bundled converter and runtime instead of rebuilding the interface for every conversation.
+Build an educational replay from the user's archive or shared conversation. Keep source messages distinct from agent-written learning notes. Use the bundled converter and runtime instead of rebuilding the interface for every conversation.
 
 ## Workflow
 
 Resolve all paths relative to this skill directory; the commands below use `<skill>` as that absolute directory. Python 3.10+ is required. Install `scripts/requirements.txt` into a virtual environment when missing.
 
-1. Inspect the archive:
+1. For a shared URL, first follow [shared-links.md](references/shared-links.md): browser-assisted capture, two stable full scans, verified downloads and at most two refresh retries per failed media item. Do not treat a landing page or a single viewport as a complete export. This creates `capture.json`; use it instead of `<input.zip>` below. For a ZIP, inspect directly:
    ```text
    python <skill>/scripts/chat_to_html.py inspect <input.zip> --report <work/report.json> --lessons-out <work/lessons.json>
    ```
@@ -29,7 +29,8 @@ Resolve all paths relative to this skill directory; the commands below use `<ski
 ## Preserve these behaviors
 
 - No large promotional introduction: start with a minimal empty state and the prepared prompt.
-- Each send reveals only the next recorded response. Long prompts stay available in full.
+- Each send reveals only the next recorded response. Expanded long prompts have no inner height cap; the short preview hides while open. The small clipboard button beside “Özgün komut” copies the full stored prompt, preserving line breaks. Failed clipboard access offers selected text without falsely reporting success.
+- Hide exported assistant Thinking/reasoning sections and tool errors by default. Exporter tool records appended to user sections are also cleaned; genuine user text and code examples remain. Original source files are unchanged.
 - The right-hand learning deck follows progress and reading position; past cards stay navigable. Narrow screens use an expandable compact deck.
 - Explicit `compareTo` selects a prior step in the same visual lineage. Never compare unrelated adjacent images automatically. Side-by-side works across ratios; the wipe slider is offered only for similar ratios.
 - Scroll to the assistant response **after** insertion/layout, using current upper/lower overlays. Reserve image dimensions. Cancel stale following after reset, new sends or manual navigation. This was a real failure in the first implementation; do not move the follow back before response insertion.
@@ -38,10 +39,11 @@ Resolve all paths relative to this skill directory; the commands below use `<ski
 
 ## References by task
 
+- Shared URL capture, completeness and expired-media recovery: [shared-links.md](references/shared-links.md).
 - Input parsing, files and limitations: [input-format.md](references/input-format.md).
 - Agent-written notes and JSON fields: [lesson-authoring.md](references/lesson-authoring.md).
 - Layout, typography, physical feedback and accessibility: [design.md](references/design.md).
 - Architecture and places to make changes: [architecture.md](references/architecture.md).
 - Checks, browser acceptance and troubleshooting: [verification.md](references/verification.md).
 
-The output is a replay, not a live ChatGPT client. Live branching, regeneration, voice/video playback and direct browser extraction are separate tasks. Do not upload, commit or publish a private archive merely because the user asked to build an HTML.
+The output is a replay, not a live ChatGPT client. Live branching, regeneration, voice/video playback and account-wide extraction are separate tasks. Do not upload, commit or publish a private archive merely because the user asked to build an HTML.

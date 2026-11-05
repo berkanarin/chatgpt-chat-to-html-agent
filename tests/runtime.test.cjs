@@ -6,18 +6,20 @@ const {execFileSync}=require('node:child_process');
 const {JSDOM,VirtualConsole,requestInterceptor}=require('jsdom');
 const root=path.resolve(__dirname,'..');
 const demo=path.join(root,'work/demo/demo.html');
-if(!fs.existsSync(demo))execFileSync(process.env.PYTHON||'python',['examples/create_demo.py','--output','work/demo'],{cwd:root});
+execFileSync(process.env.PYTHON||'python',['examples/create_demo.py','--output','work/demo'],{cwd:root});
 const source=fs.readFileSync(demo,'utf8');
 const original=JSON.parse(source.match(/id="conversation-data">(.*?)<\/script>/s)[1]);
 const wait=(ms=80)=>new Promise(r=>setTimeout(r,ms));
 function mount(data=structuredClone(original),options={}){
- const errors=[],scrolls=[],downloads=[],network=[];
+ const errors=[],scrolls=[],downloads=[],network=[],clipboard=[];
  const vc=new VirtualConsole();vc.on('jsdomError',e=>errors.push(e.message));
  const intercept=requestInterceptor(request=>{network.push(request.url);return new Response('',{status:200});});
  const content=source.replace(/(id="conversation-data">).*?(<\/script>)/s,(_,a,b)=>a+JSON.stringify(data).replace(/</g,'\\u003c')+b);
  let mobile=!!options.mobile;
  const dom=new JSDOM(content,{runScripts:'dangerously',pretendToBeVisual:true,virtualConsole:vc,resources:{interceptors:[intercept]},beforeParse(w){
   w.innerHeight=options.height||900;
+  if(options.clipboard!=='absent')Object.defineProperty(w.navigator,'clipboard',{value:{writeText:async text=>{if(options.clipboard==='reject')throw Error('denied');clipboard.push(text);}}});
+  w.document.execCommand=command=>{if(command==='copy'&&options.fallback){clipboard.push(w.document.activeElement.value);return true;}return false;};
   w.matchMedia=q=>({matches:q.includes('max-width')?mobile:options.reduced!==false});
   w.scrollTo=o=>{scrolls.push(o);w.scrollY=o.top;};
   w.HTMLDialogElement.prototype.showModal=function(){this.setAttribute('open','');};
@@ -33,7 +35,7 @@ function mount(data=structuredClone(original),options={}){
   };
  }});
  const w=dom.window,d=w.document,id=x=>d.getElementById(x);
- return {w,d,id,errors,scrolls,downloads,network,setMobile:v=>{mobile=v;},close:()=>{assert.deepEqual(errors,[]);assert.deepEqual(network,[]);w.close();}};
+ return {w,d,id,errors,scrolls,downloads,network,clipboard,setMobile:v=>{mobile=v;},close:()=>{assert.deepEqual(errors,[]);assert.deepEqual(network,[]);w.close();}};
 }
 
 test('three-turn replay, no future reveal, keyboard, cards and completion',async()=>{
@@ -130,5 +132,30 @@ test('scroll-reading selects the visible lesson; spring stays interruptible',asy
   a.d.querySelectorAll('.turn').forEach((node,i)=>{node.getBoundingClientRect=()=>i===0?{top:100,bottom:600}:{top:-500,bottom:-100};});
   a.w.dispatchEvent(new a.w.Event('scroll'));await wait();assert.equal(a.id('lesson-title').textContent,original.steps[0].lessonTitle);
   await wait(800);assert.equal(a.id('lesson-card').style.transform,'');
+ }finally{a.close();}
+});
+
+
+test('expanded long prompt has full last line, no inner clipping or duplicate preview; exact clipboard',async()=>{
+ const data=structuredClone(original);data.steps[0].prompt='# Başlık\n\n'+('  satır **özgün**\n'.repeat(120))+'SON SATIR <>&';
+ for(const options of [{},{clipboard:'reject',fallback:true},{clipboard:'absent',fallback:true}]){
+  const a=mount(data,options);try{
+   a.id('send').click();await wait();const details=a.d.querySelector('.prompt-details');details.open=true;
+   assert.equal(details.querySelector('pre').textContent,data.steps[0].prompt);
+   assert.equal(a.w.getComputedStyle(details.querySelector('pre')).maxHeight,'none');
+   assert.equal(a.w.getComputedStyle(a.d.querySelector('.prompt-preview')).display,'none');
+   a.d.querySelector('[data-copy-prompt] svg').dispatchEvent(new a.w.MouseEvent('click',{bubbles:true}));await wait();
+   assert.deepEqual(a.clipboard,[data.steps[0].prompt]);assert.equal(a.d.querySelector('.clipboard-fallback'),null);
+   assert.equal(a.id('status').textContent,'Komutun tamamı kopyalandı.');
+  }finally{a.close();}
+ }
+});
+
+test('clipboard denial opens selectable full text without claiming success',async()=>{
+ const a=mount(undefined,{clipboard:'reject'});try{
+  a.id('send').click();await wait();a.d.querySelector('[data-copy-prompt]').click();await wait();
+  const field=a.d.querySelector('.manual-copy');assert.ok(a.id('viewer').open);
+  assert.equal(field.value,original.steps[0].prompt);assert.equal(field.selectionEnd,field.value.length);
+  assert.deepEqual(a.clipboard,[]);assert.ok(a.id('status').textContent.includes('yapılamadı'));
  }finally{a.close();}
 });

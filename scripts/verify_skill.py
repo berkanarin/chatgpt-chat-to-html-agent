@@ -19,6 +19,6 @@ for file in skill.rglob('*.md'):
             if not target.startswith(('http:', 'https:', '#')):
                 assert (file.parent/target).is_file(), f'Broken reference: {file} -> {target}'
 assert '$chatgpt-chat-to-html' in (skill/'agents/openai.yaml').read_text(encoding='utf-8')
-for required in ('scripts/chat_to_html.py', 'scripts/requirements.txt', 'assets/template.html', 'assets/runtime.js', 'assets/design.css'):
+for required in ('scripts/chat_to_html.py', 'scripts/requirements.txt', 'scripts/shared_capture.js', 'scripts/shared_capture.py', 'references/shared-links.md', 'assets/template.html', 'assets/runtime.js', 'assets/design.css'):
     assert (skill/required).is_file(), required
 print('PASS: skill metadata, references, invocation and self-contained resources.')

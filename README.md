@@ -1,6 +1,6 @@
 # ChatGPT Chat to HTML Agent
 
-ChatGPT'den dışa aktarılmış bir Markdown ZIP'ini, görselleri ve dosyaları içine gömülü **tek bir çevrimdışı HTML eğitimine** dönüştüren agent + skill paketi.
+ChatGPT'den dışa aktarılmış bir Markdown ZIP'ini veya paylaşım bağlantısını, görselleri ve dosyaları içine gömülü **tek bir çevrimdışı HTML eğitimine** dönüştüren agent + skill paketi.
 
 Öğrenci **Gönder** veya **Enter** ile kayıtlı sohbeti ilerletir. Yeni yanıt görünür alana kayar. Sağdaki öğrenme kartları ilgili adımı açıklar. Görseller büyütülür; aynı tasarımın revizyonları yan yana veya kaydırmalı olarak karşılaştırılır.
 
@@ -54,6 +54,18 @@ python -m venv .venv
 
 Öğrenme notları olmadan teknik önizleme için `--lessons` ve `--require-lessons` kaldırılabilir; kartlarda notun henüz eklenmediği belirtilir. Bu, tamamlanmış eğitim notları yerine geçmez.
 
+## Paylaşım linkiyle kullanım
+
+Agent'a paylaşım URL'sini ve [AGENT.md](AGENT.md) yönergesini ver. Agent, yetkili tarayıcı araçlarıyla sohbeti iki tam taramada toplar; mesaj/ek sırasını karşılaştırır, görselleri indirip doğrular. Süresi dolan görsel için aynı paylaşımı yenileyerek en fazla iki kez tekrar dener. Eksik içerik varsayılan build'i durdurur.
+
+```text
+python skills/chatgpt-chat-to-html/scripts/chat_to_html.py share-plan https://chatgpt.com/share/<id>
+python skills/chatgpt-chat-to-html/scripts/chat_to_html.py inspect work/share/capture.json --report work/share/report.json --lessons-out work/share/lessons.json
+python skills/chatgpt-chat-to-html/scripts/chat_to_html.py build work/share/capture.json --lessons work/share/lessons.json --require-lessons --output output/egitim.html
+```
+
+`share-plan` URL'yi doğrular ve toplama yordamını gösterir; kendi başına oturum açıp indirme yapmaz. Tarayıcı araçları olan bir agent gerekir. Ayrıntılı akış, dosya biçimi, yenileme adapter'ı ve kapsam: [Paylaşım bağlantıları](skills/chatgpt-chat-to-html/references/shared-links.md).
+
 ## Skill kurulumu
 
 ```powershell
@@ -75,17 +87,18 @@ Agent'a örnek:
 ## Desteklenen davranışlar
 
 - Değişken sayıda adım; yalnızca açılmış adımlara/kartlara dönüş.
-- Uzun promptun tamamına erişim, güvenli Markdown cevabı, tablo ve kod blokları.
+- Kesilmeyen uzun komut, tam metin kopyalama ikonu, güvenli Markdown cevabı, tablo ve kod blokları.
 - PNG/JPEG/WebP/GIF, deduplikasyon, özgün dosya baytları ve indirilebilir ekler.
 - Sağda kart destesi; dar ekranda kompakt açılır kart; klavye ve erişilebilirlik tercihleri.
 - Görsel büyütme, gerçek boyut, açıkça seçilmiş önceki sürümle kıyaslama.
 - Yanıt yerleştikten sonra otomatik scroll; mobil/masaüstü üst-alt alan payı; kullanıcı gezinmesine saygı.
 - Kayıtlı UI seçimini salt okunur gösterebilme; kaydedilmemiş seçeneklere sonuç uydurmama.
-- JSON raporu; eksik dosya uyarıları; kaynak ve dosya hash doğrulaması.
+- Thinking ve araç hata kayıtlarının temizlenmesi; özgün kaynakların korunması.
+- JSON raporu; iki taramayla eksik mesaj/medya kontrolü; kaynak ve dosya hash doğrulaması.
 
 ## Sınırlar
 
-Girdi Markdown ZIP'tir; hesap JSON'u veya web sayfasını doğrudan indirme değildir. Kayıtta olmayan dosyaları, kapalı bağlantıları ve alternatif cevapları geri getirmez. Kaynak dosya ilişkileri korunur; ChatGPT'nin piksel düzeni ve metin içindeki görsellerin birebir konumu hedeflenmez. İlk görsel çiftinden fazlasını kıyaslama, canlı AI dallanması, tam GenUI uygulamaları, formül motoru ve video/audio oynatımı bu sürümde yoktur. Ayrıntılar [girdi belgesinde](skills/chatgpt-chat-to-html/references/input-format.md).
+Girdi Markdown ZIP veya tarayıcı araçlarıyla doğrulanmış paylaşım capture JSON'udur; hesap JSON'u desteklenmez. Paylaşım desteği anonim HTTP scraping değildir. Asistanın tarayıcıdan alınan zengin metni düz metin olarak korunur; özgün tablo/kod düzeni önemliyse ZIP tercih edilir. Kayıtta olmayan dosyaları, kapalı bağlantıları ve alternatif cevapları geri getirmez. Kaynak dosya ilişkileri korunur; ChatGPT'nin piksel düzeni ve metin içindeki görsellerin birebir konumu hedeflenmez. İlk görsel çiftinden fazlasını kıyaslama, canlı AI dallanması, tam GenUI uygulamaları, formül motoru ve video/audio oynatımı bu sürümde yoktur. Ayrıntılar [girdi belgesinde](skills/chatgpt-chat-to-html/references/input-format.md).
 
 ## Test ve dağıtım paketi
 

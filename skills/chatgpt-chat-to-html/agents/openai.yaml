@@ -1,4 +1,4 @@
 interface:
   display_name: "ChatGPT Chat to HTML"
-  short_description: "Sohbet ZIP'inden çevrimdışı interaktif HTML eğitim"
-  default_prompt: "Use $chatgpt-chat-to-html to turn my exported conversation ZIP into a single offline HTML replay with reviewed learning cards."
+  short_description: "Sohbet ZIP veya linkinden çevrimdışı HTML eğitim"
+  default_prompt: "Use $chatgpt-chat-to-html to turn my exported conversation ZIP or accessible ChatGPT shared link into a single offline HTML replay with reviewed learning cards."

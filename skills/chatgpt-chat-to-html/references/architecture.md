@@ -1,7 +1,8 @@
 # Mimari ve değişiklik noktaları
 
 ```text
-ZIP → inspect / normalize → report.json + lessons.json
+Paylaşım URL → yetkili tarayıcı / iki tarama / medya yenileme → capture.json + files
+ZIP veya capture.json → inspect / normalize → report.json + lessons.json
                                     ↓ agent gözlemi / not yazımı
 ZIP + lessons.json → build → tek HTML → validate / etkileşim kontrolü
 ```
@@ -11,6 +12,8 @@ ZIP + lessons.json → build → tek HTML → validate / etkileşim kontrolü
 | Kaynak | Sorumluluk |
 | --- | --- |
 | `scripts/chat_to_html.py` | ZIP sınırları, konuşmacı ayrımı, metadata temizliği, dosya çözme, hash, anotasyon kontrolü, güvenli Markdown, HTML derleme ve doğrulama |
+| `scripts/shared_capture.js` | Salt okunur DOM snapshot, sanallaştırılmış mesaj sırası birleştirme, host adapter'ıyla sınırlı medya yenileme |
+| `scripts/shared_capture.py` | Capture şeması, tarama/ek envanteri, güvenli yerel yollar, checksum/boyut doğrulama ve ortak payload |
 | `assets/template.html` | Sade iskelet, sohbet alanı, komut formu, modal, gömülü JSON ve CSS/JS yer tutucuları |
 | `assets/runtime.js` | Replay state, kartlar, ilerleme, modal, dosya indirme, karşılaştırma, otomatik scroll |
 | `assets/design.css` | Masaüstü/mobil düzen, sistem yazı tipi, kart derinliği, görünür görsel yüksekliği, erişilebilirlik |
@@ -45,3 +48,7 @@ Kaynak olmayan dosya indirmeleri data URI ve `download` ile yapılır. Çok büy
 ## Değiştirirken
 
 Yeni exporter biçimi ekleniyorsa ayrıştırıcı testi ve örnek ekleyin. Yeni step sayısı için runtime'da sabit sayı kullanmayın. Her interaktif kart seçimi gelecekteki üretilmemiş cevapları açmamalıdır. Otomatik scroll değişikliği gerçek görünür alan geometrisi testini gerektirir. Tek HTML garantisi için yeni kaynak bağımlılığını çıktının içine yerleştirin veya kapsam değişikliğini açıkça kabul ettirin.
+
+## Komut açma ve kopyalama
+
+Açık `.prompt-details` içindeki metin sınırsız doğal yükseklikte akar; kapalı özetin kısa önizlemesi açıkken gizlenir. Kopyalama, render edilmiş DOM metni yerine `DATA.steps[].prompt` kullanır. Clipboard API başarısızsa kullanıcı tıklamasıyla yerel textarea + copy fallback denenir; o da başarısızsa tam metin seçilmiş olarak açılır. Başarısız durumda “Kopyalandı” yazılmaz.

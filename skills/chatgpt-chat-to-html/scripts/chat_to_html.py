@@ -23,7 +23,7 @@ from urllib.parse import unquote, urlsplit
 from markdown_it import MarkdownIt
 from PIL import Image
 
-VERSION = '1.0.0'
+VERSION = '1.1.0'
 SKILL = Path(__file__).resolve().parent.parent
 MD = MarkdownIt('commonmark', {'html': False, 'linkify': False}).enable('table')
 MAX_TOTAL = 256 * 1024 * 1024
@@ -107,12 +107,13 @@ def strip_export_metadata(text: str, *, assistant: bool, enabled: bool) -> tuple
         return text.strip(), 0
     lines = text.splitlines(keepends=True)
     ranges = []
+    preserved_media = {}
     tokens = MD.parse(text)
     for i, token in enumerate(tokens[:-1]):
         if token.type != 'heading_open' or token.level != 0 or token.tag != 'h3' or token.map is None:
             continue
         label = tokens[i+1].content.strip()
-        known = re.fullmatch(r'(?:Thinking|Worked for .+|\d+s düşündü|Birkaç saniye düşündü)', label)
+        known = re.fullmatch(r'(?:Thinking(?: for .+)?|Worked for .+|\d+s düşündü|Birkaç saniye düşündü)', label, re.I)
         if not known:
             continue
         start = token.map[0]
@@ -122,18 +123,34 @@ def strip_export_metadata(text: str, *, assistant: bool, enabled: bool) -> tuple
                 end = later.map[0]
                 break
         body = ''.join(lines[token.map[1]:end]).strip()
-        # Thinking isn't automatically private reasoning: strip only recognisable
-        # exporter/tool bookkeeping, and preserve arbitrary readable summaries.
+        # Exporters sometimes append tool records to the USER section. Never
+        # remove arbitrary user prose, code examples or quoted headings.
         tool_only = bool(re.fullmatch(r'```json\s*\{[^`]*\}\s*```', body, re.S))
         generated_path = body.startswith('Generated images from the last `image_gen.')
+        tool_error = body.startswith(('Error parsing function call:', 'Error calling tool:', 'Error executing tool:'))
         duration = label != 'Thinking' and (not body or body.strip('*').strip() == label)
-        if duration or (assistant and (tool_only or generated_path)):
+        if duration or tool_only or generated_path or tool_error or (assistant and label.lower().startswith('thinking')):
             ranges.append((start, end))
+            # Some exporters put the final image below the tool section. Keep
+            # actual attachment references, never the tool prose or code.
+            preserved_media[start] = '\n'.join(body[a:b] for a, b, image, _, target in links(body)
+                                                if image or not (urlsplit(target).scheme or target.startswith(('#', '//')))) + '\n'
     excluded = {i for start, end in ranges for i in range(start, end)}
-    kept = ''.join(line for i, line in enumerate(lines) if i not in excluded)
+    kept = ''.join(preserved_media.get(i, '') + (line if i not in excluded else '') for i, line in enumerate(lines))
     if assistant:
         # Only paragraph-prefixed exporter captions; never remove user prompt text.
         kept, captions = re.subn(r'(?m)^Model caption:.*?(?=\n\s*\n|\Z)', '', kept, flags=re.S)
+        # An isolated tool error outside a Thinking block is not a final answer.
+        # Parse paragraphs so fenced/quoted examples remain intact.
+        error_lines = kept.splitlines(keepends=True)
+        error_ranges = []
+        error_tokens = MD.parse(kept)
+        for i, token in enumerate(error_tokens[:-1]):
+            if token.type == 'paragraph_open' and token.level == 0 and token.map:
+                if error_tokens[i+1].content.startswith(('Error parsing function call:', 'Error calling tool:', 'Error executing tool:')):
+                    error_ranges.extend(range(*token.map))
+                    captions += 1
+        kept = ''.join(line for i, line in enumerate(error_lines) if i not in error_ranges)
     else:
         captions = 0
     return kept.strip(), len(ranges) + captions
@@ -269,6 +286,10 @@ class Archive:
 
 
 def normalize(source: Path, member=None, strip_metadata=True):
+    if source.suffix.lower() == '.json':
+        # Explicit browser capture format, not an account JSON export.
+        import shared_capture
+        return shared_capture.normalize_capture(source, sys.modules[__name__], strip_metadata)
     arc = Archive(source, member)
     try:
         tokens = MD.parse(arc.text)
@@ -307,7 +328,7 @@ def normalize(source: Path, member=None, strip_metadata=True):
             removed += n1+n2
             prompt, user_html, attached_images, user_files = arc.content(user, sid)
             answer, answer_html, pictures, answer_files = arc.content(assistant, sid)
-            if not group['assistant']:
+            if not group['assistant'] or not (answer or pictures or answer_files):
                 arc.problem('missing_response', sid, sid)
             steps.append({'id': sid, 'title': f'Adım {i+1}', 'lessonTitle': f'Adım {i+1}',
                           'note': '', 'prompt': prompt, 'promptHtml': user_html,
@@ -439,9 +460,19 @@ def main(argv=None):
             p.add_argument('--title')
     p = commands.add_parser('validate')
     p.add_argument('html', type=Path)
+    p = commands.add_parser('share-plan', help='Validate a share URL and describe the browser-assisted capture workflow')
+    p.add_argument('url')
     args = parser.parse_args(argv)
     try:
-        if args.command == 'validate':
+        if args.command == 'share-plan':
+            from shared_capture import share_url
+            result = {'sourceUrl': share_url(args.url), 'mode': 'browser-assisted',
+                      'instructions': str(SKILL/'references/shared-links.md'),
+                      'browserHelpers': str(SKILL/'scripts/shared_capture.js'),
+                      'captureKind': 'chatgpt-share-capture', 'requiredStableScans': 2,
+                      'maxMediaAttempts': 3,
+                      'next': 'Open the URL with authorized browser tools, capture and verify local media, then inspect/build capture.json.'}
+        elif args.command == 'validate':
             result = validate(args.html)
         else:
             data = normalize(args.source, args.markdown, not args.keep_metadata)

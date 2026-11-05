@@ -1,6 +1,6 @@
 # Repository çalışma kuralları
 
-Bu depo, bir Markdown sohbet ZIP'ini tek dosyalık çevrimdışı HTML eğitime dönüştüren araç ve skill paketidir.
+Bu depo, bir Markdown sohbet ZIP'ini veya tarayıcıdan alınmış paylaşım kaydını tek dosyalık çevrimdışı HTML eğitime dönüştüren araç ve skill paketidir.
 
 - Ürün ve teslim süreci: [AGENT.md](AGENT.md).
 - Kullanılacak skill: [skills/chatgpt-chat-to-html/SKILL.md](skills/chatgpt-chat-to-html/SKILL.md).

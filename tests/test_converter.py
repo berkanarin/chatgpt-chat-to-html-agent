@@ -93,13 +93,35 @@ class ConverterTests(unittest.TestCase):
             c.normalize(path)
         self.assertEqual(c.normalize(path, 'Other.md')['steps'][0]['prompt'], 'a')
 
-    def test_metadata_cleanup_is_conservative(self):
+    def test_metadata_cleanup_preserves_user_but_hides_assistant_thinking(self):
         source = '## You\n### Thinking\nBu gerçek bir prompt.\n## ChatGPT\nCevap\n### Thinking\nBu okunabilir bir açıklama.\n### Worked for 2s\n*Worked for 2s*'
         data = c.normalize(self.archive(source))
         self.assertIn('Bu gerçek', data['steps'][0]['prompt'])
-        self.assertIn('Bu okunabilir', data['steps'][0]['text'])
+        self.assertNotIn('Bu okunabilir', data['steps'][0]['text'])
         self.assertNotIn('Worked for', data['steps'][0]['text'])
         self.assertIn('Worked for', c.normalize(self.archive(source), strip_metadata=False)['steps'][0]['text'])
+
+    def test_tool_error_appended_to_user_is_hidden_but_prompt_is_copyable(self):
+        prompt = 'Satır 1\n\n  Satır 2 — **aynı**'
+        source = '## You\n' + prompt + '\n\n### Thinking\nError parsing function call: Invalid JSON\n\n## ChatGPT\nTamam'
+        data = c.normalize(self.archive(source))
+        self.assertEqual(data['steps'][0]['prompt'], prompt)
+        self.assertNotIn('Error parsing', data['steps'][0]['promptHtml'])
+        self.assertEqual(data['audit']['strippedMetadataBlocks'], 1)
+
+    def test_reasoning_cleanup_keeps_final_response_images_and_code_examples(self):
+        source = '## You\nÜret\n## ChatGPT\n### Thinking\nAra değerlendirme\n![çıktı](a.png)\n### Sonuç\nHazır\n\n```text\nError parsing function call: example\n```'
+        data = c.normalize(self.archive(source, {'a.png': png()}))
+        self.assertNotIn('Ara değerlendirme', data['steps'][0]['text'])
+        self.assertIn('Hazır', data['steps'][0]['text'])
+        self.assertIn('example', data['steps'][0]['text'])
+        self.assertEqual(len(data['steps'][0]['images']), 1)
+
+    def test_standalone_tool_error_hidden_and_empty_response_flagged(self):
+        data = c.normalize(self.archive('## User\nError parsing function call: bunu açıkla\n## Assistant\nError parsing function call: Invalid JSON'))
+        self.assertIn('bunu açıkla', data['steps'][0]['prompt'])
+        self.assertEqual(data['steps'][0]['text'], '')
+        self.assertEqual(data['audit']['problems'][0]['kind'], 'missing_response')
 
     def test_raw_html_and_template_markers_stay_inert(self):
         md = '# /*__RUNTIME__*/\n## You\n</script><script>window.pwned=1</script>\n## ChatGPT\n<img src="https://example.invalid/x" onerror="alert(1)">\n\n**Güvenli**'

@@ -104,7 +104,33 @@ function update(){
  renderLesson();
  sizeResponseImages();
 }
-function userHTML(s){return `<div class="message"><div class="role"><span class="avatar user">S</span>Sen <small>Özgün komut</small></div><div class="bubble">${s.prompt.length>700?`<details class="prompt-details"><summary>Uzun komut · tamamını göster</summary><pre class="prompt-text">${esc(s.prompt)}</pre></details><div class="prompt-text">${esc(s.prompt.slice(0,160))}…</div>`:`<pre class="prompt-text">${esc(s.prompt)}</pre>`}${fileHTML(s.userFiles)}${s.attachments.map(a=>`<button class="attachment" data-image="${a.id}" data-alt="${esc(a.alt)}">${img(a)}<span>${esc(a.name)}<br>Ekli referansı büyüt ↗</span></button>`).join('')}</div></div>`;}
+function userHTML(s){return `<div class="message"><div class="role"><span class="avatar user">S</span>Sen <small>Özgün komut</small><button type="button" class="copy-prompt" data-copy-prompt="${esc(s.id)}" aria-label="Komutun tamamını kopyala" title="Komutu kopyala"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="8" y="4" width="8" height="4" rx="1.5"/><path d="M8 6H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2"/></svg></button></div><div class="bubble">${s.prompt.length>700?`<details class="prompt-details"><summary>Uzun komut · tamamını göster</summary><pre class="prompt-text">${esc(s.prompt)}</pre></details><div class="prompt-text prompt-preview">${esc(s.prompt.slice(0,160))}…</div>`:`<pre class="prompt-text">${esc(s.prompt)}</pre>`}${fileHTML(s.userFiles)}${s.attachments.map(a=>`<button class="attachment" data-image="${a.id}" data-alt="${esc(a.alt)}">${img(a)}<span>${esc(a.name)}<br>Ekli referansı büyüt ↗</span></button>`).join('')}</div></div>`;}
+async function copyPrompt(button){
+ const step=DATA.steps.find(s=>s.id===button.dataset.copyPrompt);
+ if(!step)return;
+ let copied=false;
+ try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(step.prompt);copied=true;}}catch{}
+ if(!copied){
+  // file:// clipboard permissions vary. Keep an offline, user-gesture fallback.
+  const previous=document.activeElement, selection=window.getSelection();
+  const ranges=selection?Array.from({length:selection.rangeCount},(_,i)=>selection.getRangeAt(i).cloneRange()):[];
+  const input=document.createElement('textarea');input.value=step.prompt;input.className='clipboard-fallback';
+  input.setAttribute('aria-label','Kopyalanacak komut');document.body.append(input);
+  input.focus({preventScroll:true});input.select();
+  try{copied=!!document.execCommand?.('copy');}catch{}
+  input.remove();previous?.focus({preventScroll:true});
+  if(selection){selection.removeAllRanges();for(const range of ranges)selection.addRange(range);}
+ }
+ if(copied){
+  button.dataset.copied='true';button.title='Kopyalandı';
+  $('status').textContent='Komutun tamamı kopyalandı.';
+  setTimeout(()=>{delete button.dataset.copied;button.title='Komutu kopyala';},1800);
+ }else{
+  modal('Komutu kopyala',`<p>Tarayıcı panoya erişemedi. Metni seçip kopyalayabilirsin.</p><textarea class="manual-copy" aria-label="Özgün komut" readonly>${esc(step.prompt)}</textarea>`);
+  const field=$('modal-body').querySelector('textarea');field.focus();field.select();
+  $('status').textContent='Otomatik kopyalama yapılamadı. Komut seçildi.';
+ }
+}
 function previousImage(i){const k=DATA.steps.findIndex(s=>s.id===DATA.steps[i].compareTo);return k>=0&&k<i&&DATA.steps[k].images.length?{index:k,item:DATA.steps[k].images[0]}:null;}
 
 function choiceHTML(choice){
@@ -126,7 +152,7 @@ function reset(){stopLessonMotion();followTicket++;generation++;completed=0;busy
 $('composer').addEventListener('submit',advance);$('prompt').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();advance();}});
 $('full-prompt').onclick=()=>{const s=DATA.steps[completed];if(s)modal('Komut · özgün metin',`<pre class="modal-prompt">${esc(s.prompt)}</pre>`);};
 $('steps').onclick=e=>{const b=e.target.closest('[data-step]');if(b&&!b.disabled)selectLesson(Number(b.dataset.step),true);};
-$('conversation').onclick=e=>{const b=e.target.closest('[data-image]');if(b)zoom(b.dataset.image,b.dataset.alt);const f=e.target.closest('[data-file]');if(f)downloadFile(f.dataset.file,f.dataset.name);const c=e.target.closest('[data-compare]');if(c)compare(Number(c.dataset.compare));};
+$('conversation').onclick=e=>{const copy=e.target.closest('[data-copy-prompt]');if(copy){copyPrompt(copy);return;}const b=e.target.closest('[data-image]');if(b)zoom(b.dataset.image,b.dataset.alt);const f=e.target.closest('[data-file]');if(f)downloadFile(f.dataset.file,f.dataset.name);const c=e.target.closest('[data-compare]');if(c)compare(Number(c.dataset.compare));};
 $('final-compare').onclick=()=>compare(TOTAL-1);
 $('reset').onclick=()=>{if(!completed&&!busy)return;modal('Sohbet başa dönsün mü?',`<div class="reset-copy">Adımlar kapanacak ve ilk komuttan başlayacaksın.<div class="reset-actions"><button class="compare-button" id="cancel-reset">Vazgeç</button><button class="send" id="confirm-reset">Başa dön</button></div></div>`,true);$('cancel-reset').onclick=()=>$('viewer').close();$('confirm-reset').onclick=()=>{$('viewer').close();reset();};};
 $('close-modal').onclick=()=>$('viewer').close();$('viewer').addEventListener('click',e=>{if(e.target===$('viewer')){const r=$('viewer').getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)$('viewer').close();}});
