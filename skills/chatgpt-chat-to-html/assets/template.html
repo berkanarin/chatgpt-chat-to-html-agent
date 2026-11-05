@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>/*__TITLE__*/ · Sohbet Atölyesi</title>
+<style>
+/*__STYLES__*/
+</style>
+</head>
+<body>
+<div class="shell">
+<aside class="sidebar"><div class="brand"><span class="mark" aria-hidden="true">↗</span> Sohbet Atölyesi</div><div class="eyebrow">Sohbet</div><h2>/*__TITLE__*/</h2><nav aria-label="Eğitim adımları"><ol class="steps" id="steps"></ol></nav><div class="sidefoot"><span id="side-progress">Henüz başlamadı</span><div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div></div></aside>
+<main class="main"><header class="topbar"><div class="breadcrumb"><strong>/*__TITLE__*/</strong></div><div class="top-actions"><span class="pill">Çevrimdışı</span><button class="plain" id="reset">Başa dön ↺</button></div></header>
+<div class="content"><section class="welcome" id="welcome"><div class="welcome-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18l-3 3v-6a8 8 0 01-1-4c0-5 4-8 9-8s9 3 9 8-4 8-9 8c-2 0-3-.3-5-1z"/><path d="M8 9h8M8 13h5"/></svg></div><p>İlk komut hazır.</p></section><div id="conversation" aria-label="Sohbet kaydı"></div><section class="finish" id="finish" hidden><h3>Sohbet tamamlandı.</h3><p>Adımları ve öğrenme kartlarını yeniden inceleyebilirsin.</p><button class="compare-button" id="final-compare">Son iki sürümü karşılaştır ↔</button></section></div>
+<div class="composer-wrap"><div class="composer-inner"><div class="composer-label"><strong id="next-label">Komut</strong><button class="plain" id="full-prompt" hidden>Komutun tamamı ↗</button><span id="progress-label">Başlamaya hazır</span></div><form class="composer" id="composer"><label class="sr-only" for="prompt">Gönderilecek kayıtlı komut</label><textarea id="prompt" rows="3" readonly></textarea><div class="composer-bottom"><span class="composer-hint" id="composer-hint">Enter ile gönder</span><button class="send" id="send" type="submit"><span>Gönder</span><span aria-hidden="true">↑</span></button></div></form><p class="caption">Kayıtlı sohbet · Çevrimdışı simülasyon</p></div></div></main></div>
+<div id="status" class="sr-only" role="status" aria-live="polite"></div>
+<dialog id="viewer" aria-labelledby="modal-title"><div class="modal-head"><h2 id="modal-title"></h2><button class="close" id="close-modal" aria-label="Pencereyi kapat">×</button></div><div class="modal-body" id="modal-body"></div></dialog>
+<script type="application/json" id="conversation-data">/*__PAYLOAD__*/</script>
+<script>/*__RUNTIME__*/</script></body></html>

@@ -1,0 +1,12 @@
+{
+  "name": "chatgpt-chat-to-html-agent",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Development tests for the self-contained offline chat replay skill",
+  "scripts": {
+    "test": "node --test tests/runtime.test.cjs",
+    "check": "node --check skills/chatgpt-chat-to-html/assets/runtime.js"
+  },
+  "engines": {"node": ">=22"},
+  "devDependencies": {"jsdom": "^29.0.0"}
+}

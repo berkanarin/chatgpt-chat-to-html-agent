@@ -1,0 +1,15 @@
+.venv/
+node_modules/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+dist/
+output/
+work/
+private/
+*.zip
+!packages/chatgpt-chat-to-html-agent.zip
+*.log
+.env
+.env.*
+!.env.example
